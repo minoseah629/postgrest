@@ -1,13 +1,16 @@
 {
   "thresholds": {
-    "total_min": 0,
+    "total_min": 90,
     "file_min": 0,
     "required_files": {
-      "src/library/PostgREST/Response/OpenAPI.hs": 0,
-      "src/library/PostgREST/Config.hs": 0
+      "src/library/PostgREST/Response/OpenAPI.hs": 97,
+      "src/library/PostgREST/Config.hs": 95
     },
     "level_direction": "ascending",
     "level_tolerance": 0,
-    "level_min": {}
+    "level_min": {
+      "api": 68,
+      "e2e": 71
+    }
   }
 }
