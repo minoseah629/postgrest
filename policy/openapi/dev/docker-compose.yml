@@ -1,7 +1,7 @@
 # Dev stack whose generated OpenAPI spec passes more of the policy checks.
 #   docker compose -f policy/openapi/dev/docker-compose.yml up -d
 #   scripts/lint-openapi.sh            # patches the spec with gateway behavior, then lints
-#   curl -i localhost:8080/todos       # via the rate-limited gateway
+#   curl -i localhost:${GATEWAY_PORT:-8080}/todos   # via the rate-limited gateway (GATEWAY_PORT=8081 if 8080 is taken)
 services:
   db:
     image: postgres:16
@@ -38,6 +38,6 @@ services:
     depends_on:
       - postgrest
     ports:
-      - "8080:8080"
+      - "${GATEWAY_PORT:-8080}:8080"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
