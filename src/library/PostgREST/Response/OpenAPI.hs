@@ -60,6 +60,74 @@ encode versions conf sCache tables procs schemaDescription =
       (proxyUri conf)
       schemaDescription
       (configOpenApiSecurityActive conf)
+      (configDbMaxRows conf)
+
+-- | Name of the shared schema describing PostgREST error bodies.
+errorSchemaName :: Text
+errorSchemaName = "PostgrestError"
+
+makeErrorSchema :: Schema
+makeErrorSchema =
+  (mempty :: Schema)
+    & description ?~ "Error body returned by PostgREST"
+    & type_ ?~ SwaggerObject
+    & properties
+      .~ fromList
+        [ ("code", errorTextProperty),
+          ("message", errorTextProperty),
+          ("details", errorTextProperty),
+          ("hint", errorTextProperty)
+        ]
+  where
+    errorTextProperty =
+      Inline $
+        (mempty :: Schema)
+          & type_ ?~ SwaggerString
+          & format ?~ "text"
+          & maxLength ?~ 2000
+
+makeErrorResponse :: Text -> Referenced Response
+makeErrorResponse d =
+  Inline $
+    (mempty :: Response)
+      & description .~ d
+      & schema ?~ Ref (Reference errorSchemaName)
+
+-- | Documents the error responses PostgREST can always return.
+withErrorResponses :: Operation -> Operation
+withErrorResponses op =
+  op
+    & at 400 ?~ makeErrorResponse "Bad request"
+    & at 401 ?~ makeErrorResponse "Missing, invalid or expired JWT"
+    & at 500 ?~ makeErrorResponse "Internal server error"
+
+-- | Makes a name usable as an operationId (ASCII letters, digits and underscore).
+toOperationId :: Text -> Text
+toOperationId = T.map (\c -> if c `elem` allowedChars then c else '_')
+  where
+    allowedChars = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ "_"
+
+-- | Patterns describing PostgREST's own query/header grammar.
+rowFilterPattern :: Text
+rowFilterPattern = "^(not\\.)?(eq|neq|gt|gte|lt|lte|like|ilike|match|imatch|in|is|isdistinct|cs|cd|ov|sl|sr|nxl|nxr|adj|fts|plfts|phfts|wfts)(\\([a-z]+\\))?\\..{0,200}$"
+
+selectPattern :: Text
+selectPattern = "^[A-Za-z0-9_.,:()*>!\\-]{1,500}$"
+
+orderPattern :: Text
+orderPattern = "^[A-Za-z0-9_.,]{1,200}$"
+
+onConflictPattern :: Text
+onConflictPattern = "^[A-Za-z0-9_,]{1,200}$"
+
+numberPattern :: Text
+numberPattern = "^[0-9]{1,9}$"
+
+rangePattern :: Text
+rangePattern = "^[0-9]*-[0-9]*$"
+
+preferPattern :: Text
+preferPattern = "^[A-Za-z0-9=,;_\\- ]{1,200}$"
 
 makeMimeList :: [MediaType] -> MimeList
 makeMimeList cs = MimeList $ fmap (fromString . BS.unpack . toMime) cs
@@ -195,6 +263,8 @@ makePreferParam ts =
             & in_ .~ ParamHeader
             & type_ ?~ SwaggerString
             & enum_ .~ if null enu then Nothing else JSON.decode (JSON.encode enu)
+            & pattern .~ (if null enu then Just preferPattern else Nothing)
+            & maxLength .~ (if null enu then Just 200 else Nothing)
         )
   where
     enu = foldl (<>) [] (val <$> ts)
@@ -268,6 +338,8 @@ makeParamDefs ti =
             ( (mempty :: ParamOtherSchema)
                 & in_ .~ ParamQuery
                 & type_ ?~ SwaggerString
+                & pattern ?~ selectPattern
+                & maxLength ?~ 500
             )
     ),
     ( "on_conflict",
@@ -280,6 +352,8 @@ makeParamDefs ti =
             ( (mempty :: ParamOtherSchema)
                 & in_ .~ ParamQuery
                 & type_ ?~ SwaggerString
+                & pattern ?~ onConflictPattern
+                & maxLength ?~ 200
             )
     ),
     ( "order",
@@ -292,6 +366,8 @@ makeParamDefs ti =
             ( (mempty :: ParamOtherSchema)
                 & in_ .~ ParamQuery
                 & type_ ?~ SwaggerString
+                & pattern ?~ orderPattern
+                & maxLength ?~ 200
             )
     ),
     ( "range",
@@ -304,6 +380,8 @@ makeParamDefs ti =
             ( (mempty :: ParamOtherSchema)
                 & in_ .~ ParamHeader
                 & type_ ?~ SwaggerString
+                & pattern ?~ rangePattern
+                & maxLength ?~ 200
             )
     ),
     ( "rangeUnit",
@@ -317,6 +395,7 @@ makeParamDefs ti =
                 & in_ .~ ParamHeader
                 & type_ ?~ SwaggerString
                 & default_ .~ JSON.decode "\"items\""
+                & enum_ .~ JSON.decode "[\"items\"]"
             )
     ),
     ( "offset",
@@ -329,6 +408,8 @@ makeParamDefs ti =
             ( (mempty :: ParamOtherSchema)
                 & in_ .~ ParamQuery
                 & type_ ?~ SwaggerString
+                & pattern ?~ numberPattern
+                & maxLength ?~ 200
             )
     ),
     ( "limit",
@@ -341,6 +422,8 @@ makeParamDefs ti =
             ( (mempty :: ParamOtherSchema)
                 & in_ .~ ParamQuery
                 & type_ ?~ SwaggerString
+                & pattern ?~ numberPattern
+                & maxLength ?~ 200
             )
     )
   ]
@@ -364,21 +447,23 @@ makeRowFilter tn c =
   ( T.intercalate "." ["rowFilter", tn, colName c],
     (mempty :: Param)
       & name .~ colName c
-      & description .~ colDescription c
+      & description .~ (colDescription c <|> Just ("Filter on " <> colName c <> " using PostgREST operator syntax, e.g. eq.value"))
       & required ?~ False
       & schema
         .~ ParamOther
           ( (mempty :: ParamOtherSchema)
               & in_ .~ ParamQuery
               & type_ ?~ SwaggerString
+              & pattern ?~ rowFilterPattern
+              & maxLength ?~ 256
           )
   )
 
 makeRowFilters :: Text -> [Column] -> [(Text, Param)]
 makeRowFilters tn = fmap (makeRowFilter tn)
 
-makePathItem :: Table -> (FilePath, PathItem)
-makePathItem t = ("/" ++ T.unpack tn, p $ tableInsertable t || tableUpdatable t || tableDeletable t)
+makePathItem :: Maybe Integer -> Table -> (FilePath, PathItem)
+makePathItem maxRows t = ("/" ++ T.unpack tn, p $ tableInsertable t || tableUpdatable t || tableDeletable t)
   where
     -- Use first line of table description as summary; rest as description (if present)
     -- We strip leading newlines from description so that users can include a blank line between summary and description
@@ -386,12 +471,16 @@ makePathItem t = ("/" ++ T.unpack tn, p $ tableInsertable t || tableUpdatable t 
       fmap fst &&& fmap (T.dropWhile (== '\n') . snd) $
         T.breakOn "\n" <$> tableDescription t
     tOp =
-      (mempty :: Operation)
-        & tags .~ Set.fromList [tn]
-        & summary .~ tSum
-        & description .~ mfilter (/= "") tDesc
+      withErrorResponses $
+        (mempty :: Operation)
+          & tags .~ Set.fromList [tn]
+          & summary .~ tSum
+    -- the table description (when present) applies to every method, otherwise a generic one is used
+    opDescription fallback = mfilter (/= "") tDesc <|> Just fallback
     getOp =
       tOp
+        & operationId ?~ toOperationId ("get_" <> tn)
+        & description .~ opDescription ("Read rows from " <> tn)
         & parameters .~ fmap ref (rs <> ["select", "order", "range", "rangeUnit", "offset", "limit", "preferCount"])
         & at 206 ?~ "Partial Content"
         & at 200
@@ -402,19 +491,26 @@ makePathItem t = ("/" ++ T.unpack tn, p $ tableInsertable t || tableUpdatable t 
                   ?~ Inline
                     ( mempty
                         & type_ ?~ SwaggerArray
+                        & maxItems .~ maxRows
                         & items ?~ SwaggerItemsObject (Ref $ Reference $ tableName t)
                     )
             )
     postOp =
       tOp
+        & operationId ?~ toOperationId ("post_" <> tn)
+        & description .~ opDescription ("Insert rows into " <> tn)
         & parameters .~ fmap ref ["body." <> tn, "select", "preferPost"]
         & at 201 ?~ "Created"
     patchOp =
       tOp
+        & operationId ?~ toOperationId ("patch_" <> tn)
+        & description .~ opDescription ("Update rows in " <> tn)
         & parameters .~ fmap ref (rs <> ["body." <> tn, "preferReturn"])
         & at 204 ?~ "No Content"
     deletOp =
       tOp
+        & operationId ?~ toOperationId ("delete_" <> tn)
+        & description .~ opDescription ("Delete rows from " <> tn)
         & parameters .~ fmap ref (rs <> ["preferReturn"])
         & at 204 ?~ "No Content"
     pr = (mempty :: PathItem) & get ?~ getOp
@@ -434,17 +530,20 @@ makeProcPathItem pd = ("/rpc/" ++ toS (pdName pd), pe)
       fmap fst &&& fmap (T.dropWhile (== '\n') . snd) $
         T.breakOn "\n" <$> pdDescription pd
     procOp =
-      (mempty :: Operation)
-        & summary .~ pSum
-        & description .~ mfilter (/= "") pDesc
-        & tags .~ Set.fromList ["(rpc) " <> pdName pd]
-        & produces ?~ makeMimeList [MTApplicationJSON, MTVndSingularJSON True, MTVndSingularJSON False]
-        & at 200 ?~ "OK"
+      withErrorResponses $
+        (mempty :: Operation)
+          & summary .~ pSum
+          & description .~ (mfilter (/= "") pDesc <|> Just ("Call the " <> pdName pd <> " function"))
+          & tags .~ Set.fromList ["(rpc) " <> pdName pd]
+          & produces ?~ makeMimeList [MTApplicationJSON, MTVndSingularJSON True, MTVndSingularJSON False]
+          & at 200 ?~ "OK"
     getOp =
       procOp
+        & operationId ?~ toOperationId ("rpc_get_" <> pdName pd)
         & parameters .~ makeProcGetParams (pdParams pd)
     postOp =
       procOp
+        & operationId ?~ toOperationId ("rpc_post_" <> pdName pd)
         & parameters .~ makeProcPostParams pd
     pe = case pdVolatility pd of
       Volatile -> (mempty :: PathItem) & post ?~ postOp
@@ -454,20 +553,34 @@ makeRootPathItem :: (FilePath, PathItem)
 makeRootPathItem = ("/", p)
   where
     getOp =
-      (mempty :: Operation)
-        & tags .~ Set.fromList ["Introspection"]
-        & summary ?~ "OpenAPI description (this document)"
-        & produces ?~ makeMimeList [MTOpenAPI, MTApplicationJSON]
-        & at 200 ?~ "OK"
+      withErrorResponses $
+        (mempty :: Operation)
+          & tags .~ Set.fromList ["Introspection"]
+          & operationId ?~ "get_root"
+          & summary ?~ "OpenAPI description (this document)"
+          & description ?~ "Returns the OpenAPI description of this API"
+          & produces ?~ makeMimeList [MTOpenAPI, MTApplicationJSON]
+          & at 200 ?~ "OK"
     pr = (mempty :: PathItem) & get ?~ getOp
     p = pr
 
-makePathItems :: [Routine] -> [Table] -> InsOrdHashMap FilePath PathItem
-makePathItems pds ti =
+makePathItems :: Maybe Integer -> [Routine] -> [Table] -> InsOrdHashMap FilePath PathItem
+makePathItems maxRows pds ti =
   fromList $
     makeRootPathItem
-      : fmap makePathItem ti
+      : fmap (makePathItem maxRows) ti
       ++ fmap makeProcPathItem pds
+
+-- | Top-level tag definitions (with descriptions), sorted by name.
+makeTagDefs :: [Routine] -> [Table] -> Set.InsOrdHashSet Tag
+makeTagDefs pds ti =
+  Set.fromList
+    [ (fromString (T.unpack n) :: Tag) & description ?~ d
+    | (n, d) <- sortOn fst $
+        ("Introspection", "OpenAPI description of this API")
+          : [(tableName t, "Operations on " <> tableName t) | t <- ti]
+          ++ [("(rpc) " <> pdName pd, "Call the " <> pdName pd <> " function") | pd <- pds]
+    ]
 
 makeSecurityDefinitions :: Text -> Bool -> SecurityDefinitions
 makeSecurityDefinitions secName allow
@@ -477,8 +590,8 @@ makeSecurityDefinitions secName allow
     secSchType = SecuritySchemeApiKey (ApiKeyParams "Authorization" ApiKeyHeader)
     secSchDescription = Just "Add the token prepending \"Bearer \" (without quotes) to it"
 
-postgrestSpec :: (Text, Text) -> RelationshipsMap -> [Routine] -> [Table] -> (Text, Text, Integer, Text) -> Maybe Text -> Bool -> Swagger
-postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecurityDef =
+postgrestSpec :: (Text, Text) -> RelationshipsMap -> [Routine] -> [Table] -> (Text, Text, Integer, Text) -> Maybe Text -> Bool -> Maybe Integer -> Swagger
+postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecurityDef maxRows =
   (mempty :: Swagger)
     & basePath ?~ T.unpack b
     & schemes ?~ [s']
@@ -487,6 +600,15 @@ postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecu
              & version .~ prettyVersion
              & title .~ fromMaybe "PostgREST API" dTitle
              & description ?~ fromMaybe "This is a dynamic API generated by PostgREST" dDesc
+             & contact
+               ?~ ( (mempty :: Contact)
+                      & name ?~ "PostgREST"
+                      & url ?~ URL "https://postgrest.org"
+                  )
+             & license
+               ?~ ( (fromString "MIT" :: License)
+                      & url ?~ URL "https://github.com/PostgREST/postgrest/blob/main/LICENSE"
+                  )
          )
     & externalDocs
       ?~ ( (mempty :: ExternalDocs)
@@ -494,9 +616,10 @@ postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecu
              & url .~ URL ("https://postgrest.org/en/" <> docsVersion <> "/references/api.html")
          )
     & host .~ h'
-    & definitions .~ fromList (makeTableDef rels <$> ti)
+    & tags .~ makeTagDefs pds ti
+    & definitions .~ fromList ((errorSchemaName, makeErrorSchema) : (makeTableDef rels <$> ti))
     & parameters .~ fromList (makeParamDefs ti)
-    & paths .~ makePathItems pds ti
+    & paths .~ makePathItems maxRows pds ti
     & produces .~ makeMimeList [MTApplicationJSON, MTVndSingularJSON True, MTVndSingularJSON False, MTTextCSV]
     & consumes .~ makeMimeList [MTApplicationJSON, MTVndSingularJSON True, MTVndSingularJSON False, MTTextCSV]
     & securityDefinitions .~ makeSecurityDefinitions securityDefName allowSecurityDef

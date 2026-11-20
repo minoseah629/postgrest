@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Patch PostgREST's generated Swagger 2.0 spec with what the gateway adds or enforces.
 
-PostgREST does not emit error responses, rate-limit headers, array bounds or
-parameter patterns. policy/openapi/dev/nginx.conf and PGRST_DB_MAX_ROWS provide
+Since the OpenAPI.hs changes on this branch, PostgREST itself emits error responses,
+parameter patterns, operationIds, tags, contact/license and (with db-max-rows) maxItems;
+this script only fills in what is still missing, mainly 429 and rate-limit headers. policy/openapi/dev/nginx.conf and PGRST_DB_MAX_ROWS provide
 (or constrain) these at runtime; this script documents them in the spec so the
 Spectral and OPA checks can verify the contract.
 
@@ -59,7 +60,7 @@ def main():
 
     # ---- error model ----------------------------------------------------
     defs = spec.setdefault("definitions", {})
-    defs["error"] = {
+    defs.setdefault("error", {
         "type": "object",
         "description": "PostgREST error body.",
         "properties": {
@@ -68,7 +69,7 @@ def main():
             "details": {"type": "string", "format": "text", "maxLength": 2000, "x-nullable": True},
             "hint": {"type": "string", "format": "text", "maxLength": 2000, "x-nullable": True},
         },
-    }
+    })
 
     # ---- definitions: bound uuids; drop DB-expression defaults ----------
     for d in defs.values():
@@ -91,12 +92,12 @@ def main():
         if "enum" in p:
             continue
         if name.startswith("rowFilter."):
-            p["pattern"] = ROW_FILTER
-            p["maxLength"] = 256
+            p.setdefault("pattern", ROW_FILTER)
+            p.setdefault("maxLength", 256)
             p.setdefault("description", "Filter on %s (PostgREST operator syntax, e.g. eq.value)" % name.split(".", 1)[1])
         elif name in PARAM_PATTERNS:
-            p["pattern"] = PARAM_PATTERNS[name]
-            p["maxLength"] = 500 if name == "select" else 200
+            p.setdefault("pattern", PARAM_PATTERNS[name])
+            p.setdefault("maxLength", 500 if name == "select" else 200)
 
     # ---- operations -----------------------------------------------------
     rl_hdr = {
@@ -131,9 +132,9 @@ def main():
                     r.setdefault("headers", {})["X-RateLimit-Limit"] = dict(rl_hdr)
                 s = r.get("schema")
                 if s and s.get("type") == "array":
-                    s["maxItems"] = a.max_rows  # matches PGRST_DB_MAX_ROWS
+                    s.setdefault("maxItems", a.max_rows)  # matches PGRST_DB_MAX_ROWS
 
-    spec["tags"] = [{"name": n, "description": tags[n]} for n in sorted(tags)]
+    spec.setdefault("tags", [{"name": n, "description": tags[n]} for n in sorted(tags)])
     json.dump(spec, open(a.dst, "w"), indent=2)
     open(a.dst, "a").write("\n")
 

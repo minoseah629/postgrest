@@ -1,6 +1,6 @@
 module Feature.OpenApi.OpenApiSpec where
 
-import Control.Lens ((^?))
+import Control.Lens ((^..), (^?))
 import Data.Aeson.Lens
 import Data.Aeson.QQ
 import Data.Aeson.Types (Value (..))
@@ -69,6 +69,51 @@ spec withConfig = withConfig baseCfg $ describe "OpenAPI" $ do
 
         childGetDescription `shouldBe` Just "My API description\nthat spans\nmultiple lines"
 
+  describe "security-relevant documentation" $ do
+    it "includes contact and license in info" $ do
+      r <- simpleBody <$> get "/"
+
+      liftIO $ do
+        r ^? key "info" . key "contact" . key "name" `shouldBe` Just "PostgREST"
+        r ^? key "info" . key "license" . key "name" `shouldBe` Just "MIT"
+
+    it "includes a description for every top-level tag" $ do
+      r <- simpleBody <$> get "/"
+
+      let tagDescriptions = r ^.. key "tags" . values . key "description"
+
+      liftIO $ do
+        tagDescriptions `shouldSatisfy` (not . null)
+        r ^.. key "tags" . values . key "name" `shouldSatisfy` ((== length tagDescriptions) . length)
+
+    it "includes operationIds" $ do
+      r <- simpleBody <$> get "/"
+
+      liftIO $ do
+        r ^? key "paths" . key "/child_entities" . key "get" . key "operationId" `shouldBe` Just "get_child_entities"
+        r ^? key "paths" . key "/child_entities" . key "post" . key "operationId" `shouldBe` Just "post_child_entities"
+        r ^? key "paths" . key "/" . key "get" . key "operationId" `shouldBe` Just "get_root"
+
+    it "documents error responses with a shared schema" $ do
+      r <- simpleBody <$> get "/"
+
+      let errorRef code = r ^? key "paths" . key "/child_entities" . key "get" . key "responses" . key code . key "schema" . key "$ref"
+
+      liftIO $ do
+        errorRef "400" `shouldBe` Just "#/definitions/PostgrestError"
+        errorRef "401" `shouldBe` Just "#/definitions/PostgrestError"
+        errorRef "500" `shouldBe` Just "#/definitions/PostgrestError"
+        r ^? key "definitions" . key "PostgrestError" . key "properties" . key "message" . key "maxLength" `shouldBe` Just (Number 2000)
+
+    it "constrains query parameters to PostgREST's grammar" $ do
+      r <- simpleBody <$> get "/"
+
+      liftIO $ do
+        r ^? key "parameters" . key "limit" . key "pattern" `shouldBe` Just "^[0-9]{1,9}$"
+        r ^? key "parameters" . key "rangeUnit" . key "enum" `shouldBe` Just [aesonQQ|["items"]|]
+        r ^? key "parameters" . key "rowFilter.child_entities.id" . key "maxLength" `shouldBe` Just (Number 256)
+        r ^? key "parameters" . key "rowFilter.child_entities.id" . key "pattern" `shouldSatisfy` isJust
+
   describe "table" $ do
     it "includes paths to tables" $ do
       r <- simpleBody <$> get "/"
@@ -91,7 +136,7 @@ spec withConfig = withConfig baseCfg $ describe "OpenAPI" $ do
       liftIO $ do
         childGetSummary `shouldBe` Just "child_entities comment"
 
-        childGetDescription `shouldBe` Nothing
+        childGetDescription `shouldBe` Just "Read rows from child_entities"
 
         grandChildGetSummary `shouldBe` Just "grandchild_entities summary"
 

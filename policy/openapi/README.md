@@ -30,11 +30,13 @@ Requires `opa` and `spectral` (or `npx`). Spectral fails on errors; OPA fails wh
 | No auth scheme / unprotected writes | `openapi-security-active=true` | PostgREST config |
 | Unbounded strings (`maxLength`) | use `varchar(n)` instead of `text` | database schema |
 | String without format/pattern | `enum` types, `format` via domain types | database schema |
-| Missing 429 + rate-limit headers | nginx rate limiting (`dev/nginx.conf`), documented by `patch-openapi.py` | gateway |
-| Missing 400/401/500 responses | PostgREST already returns them; the patch documents them with the `error` schema | spec patch |
-| Array `maxItems` | `PGRST_DB_MAX_ROWS=1000`, documented as `maxItems` | PostgREST config + spec patch |
-| Unpatterned filter/header parameters | patterns for PostgREST's own grammar (`eq.value`, `select`, `order`, ...) | spec patch |
-| Contact/license/tags/operationIds/descriptions | filled in by the patch | spec patch |
+| Missing 429 + rate-limit headers | nginx rate limiting (`dev/nginx.conf`), documented by `patch-openapi.py` | gateway + spec patch |
+| Missing 400/401/500 responses | emitted by `OpenAPI.hs` (`PostgrestError` schema) | PostgREST source |
+| operationIds, descriptions, tags, contact, license | emitted by `OpenAPI.hs` | PostgREST source |
+| Parameter patterns / `maxLength`, `Range-Unit` enum | emitted by `OpenAPI.hs` | PostgREST source |
+| Array `maxItems` | emitted by `OpenAPI.hs` from `db-max-rows` (set `PGRST_DB_MAX_ROWS`) | PostgREST source + config |
+
+With a PostgREST built from this branch, `scripts/lint-openapi.sh --raw` should leave only the rate-limiting findings (429 and rate-limit headers), which PostgREST cannot know about. The default (patched) mode adds those.
 
 ### Enforced vs. only declared
 
