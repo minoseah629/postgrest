@@ -106,7 +106,7 @@ withErrorResponses op =
 -- | Documents a gateway-enforced rate limit (PostgREST itself does not enforce it):
 -- a 429 response on every operation plus rate-limit headers on 2xx/4xx responses.
 withRateLimit :: Maybe Integer -> Swagger -> Swagger
-withRateLimit Nothing = id
+withRateLimit Nothing = identity
 withRateLimit (Just limit) = over (paths . traverse) onPathItem
   where
     onPathItem pathItem =
@@ -117,7 +117,7 @@ withRateLimit (Just limit) = over (paths . traverse) onPathItem
         & delete %~ fmap onOperation
     onOperation op =
       (op & at 429 ?~ makeErrorResponse ("Too many requests, limit is " <> show limit <> " per second"))
-        & responses . responsesResponses %~ InsOrd.mapWithKey addHeaders
+        & responses %~ (\rs -> rs {_responsesResponses = InsOrd.mapWithKey addHeaders (_responsesResponses rs)})
     addHeaders code (Inline r)
       | code `div` 100 `elem` [2, 4] =
           Inline $ r & headers %~ (InsOrd.fromList (limitHeaders code) <>)
