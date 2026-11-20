@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Lint PostgREST's generated OpenAPI (Swagger 2.0) spec with Spectral (OWASP ruleset) and OPA (Rego).
-# Usage: scripts/lint-openapi.sh [SPEC_FILE_OR_URL]   (default: http://localhost:3000/)
+# Usage: scripts/lint-openapi.sh [--raw] [SPEC_FILE_OR_URL]   (default: http://localhost:3000/)
+# By default the spec is first patched (scripts/patch-openapi.py) with the behavior the
+# gateway adds; --raw lints PostgREST's spec exactly as generated.
 # Requires: curl, opa, and either spectral or npx on PATH.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+RAW=0
+[[ "${1:-}" == "--raw" ]] && { RAW=1; shift; }
 SRC="${1:-http://localhost:3000/}"
 SPEC="$(mktemp --suffix=.json)"
 trap 'rm -f "$SPEC"' EXIT
@@ -17,6 +21,10 @@ fi
 
 SPECTRAL=(spectral)
 command -v spectral >/dev/null || SPECTRAL=(npx --yes @stoplight/spectral-cli)
+
+if [[ "$RAW" == "0" ]]; then
+  python3 "$ROOT/scripts/patch-openapi.py" "$SPEC" "$SPEC.patched" && mv "$SPEC.patched" "$SPEC"
+fi
 
 status=0
 

@@ -28,20 +28,7 @@ jobs:
       - name: Seed example schema
         env:
           PGPASSWORD: pass
-        run: |
-          psql -h localhost -U postgres <<'SQL'
-          create schema api;
-          create table api.todos (
-            id uuid primary key default gen_random_uuid(),
-            task text not null,
-            done boolean not null default false
-          );
-          create role anon nologin;
-          grant usage on schema api to anon;
-          grant select on api.todos to anon;
-          create role authenticator noinherit login password 'pass';
-          grant anon to authenticator;
-          SQL
+        run: psql -h localhost -U postgres -f policy/openapi/dev/seed.sql
 
       - name: Start PostgREST
         run: |
@@ -49,6 +36,9 @@ jobs:
             -e PGRST_DB_URI="postgres://authenticator:pass@localhost:5432/postgres" \
             -e PGRST_DB_SCHEMAS=api -e PGRST_DB_ANON_ROLE=anon \
             -e PGRST_JWT_SECRET="reallyreallyreallyreallyverysafe123" \
+            -e PGRST_OPENAPI_SERVER_PROXY_URI=https://localhost \
+            -e PGRST_OPENAPI_SECURITY_ACTIVE=true \
+            -e PGRST_DB_MAX_ROWS=1000 \
             postgrest/postgrest
           for i in $(seq 1 30); do
             curl -fsS -o /dev/null http://localhost:3000/ && exit 0

@@ -982,7 +982,10 @@
         }
       ],
       "description": "Operation must have a 429 response defined.\r\n\r\n**Invalid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '431':\r\n      description: Request Header Fields Too Large\r\n      headers:\r\n        ...\r\n```\r\n\r\n**Valid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '429':\r\n      description: Too Many Requests\r\n      headers:\r\n        ...\r\n```",
-      "message": "{{description}}. Missing {{property}}"
+      "message": "{{description}}. Missing {{property}}",
+      "formats": [
+        "oas3"
+      ]
     },
     "owasp:api3:2019-define-error-responses-500": {
       "given": [
@@ -1000,7 +1003,10 @@
         }
       ],
       "description": "Operation must have a  response defined.\r\n\r\n**Invalid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '501':\r\n      description: Bad Gateway\r\n      headers:\r\n        ...\r\n```\r\n\r\n**Valid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '429':\r\n        ...\r\n    '500':\r\n      description: Internal Server Error\r\n      headers:\r\n        ...\r\n```",
-      "message": "{{description}}. Missing {{property}}"
+      "message": "{{description}}. Missing {{property}}",
+      "formats": [
+        "oas3"
+      ]
     },
     "owasp:api4:2019-rate-limit": {
       "given": [
@@ -1252,7 +1258,10 @@
         }
       ],
       "description": "Operation must have a 401 response defined.\r\n\r\n**Invalid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '501':\r\n      description: Bad Gateway\r\n      headers:\r\n        ...\r\n```\r\n\r\n**Valid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '429':\r\n        ...\r\n    '401':\r\n      description: Not Authenticated\r\n      headers:\r\n        ...\r\n```",
-      "message": "{{description}}. Missing {{property}}"
+      "message": "{{description}}. Missing {{property}}",
+      "formats": [
+        "oas3"
+      ]
     },
     "contact-url": {
       "given": [
@@ -1544,7 +1553,10 @@
         }
       },
       "description": "A server should be defined at the root document level. This can be localhost, a development server, or a production server. \n\n**Valid OpenAPI V3 Example**\n\n```json\n{\n  \"servers\": [\n    {\n      \"url\": \"https://staging.myprodserver.com/v1\",\n      \"description\": \"Staging server\"\n    },\n    {\n      \"url\": \"https://myprodserver.com/v1\",\n      \"description\": \"Production server\"\n    }\n  ]\n}\n```\n\n**Valid OpenAPI V2 Example**\n\n```json\n{\n  \"host\": \"myprodserver.com\",\n  \"basePath\": \"/v2\",\n  \"schemes\": [\n    \"https\"\n  ]\n}\n```\n\n",
-      "message": "Server should be present."
+      "message": "Server should be present.",
+      "formats": [
+        "oas3"
+      ]
     },
     "server-trailing-slash": {
       "given": [
@@ -2010,6 +2022,95 @@
       "message": "Servers must use the HTTPS protocol except when using localhost",
       "formats": [
         "oas3"
+      ]
+    },
+    "owasp:api3:2019-define-error-responses-401-oas2": {
+      "given": [
+        "$.paths..responses"
+      ],
+      "severity": "warn",
+      "then": [
+        {
+          "function": "truthy",
+          "field": "401"
+        }
+      ],
+      "description": "Operation must have a 401 response defined.\r\n\r\n**Invalid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '501':\r\n      description: Bad Gateway\r\n      headers:\r\n        ...\r\n```\r\n\r\n**Valid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '429':\r\n        ...\r\n    '401':\r\n      description: Not Authenticated\r\n      headers:\r\n        ...\r\n```\n\n(Swagger 2.0 variant: checks the response code only; `content` does not exist in OAS2.)",
+      "message": "{{description}}. Missing {{property}}",
+      "formats": [
+        "oas2"
+      ]
+    },
+    "owasp:api3:2019-define-error-responses-500-oas2": {
+      "given": [
+        "$.paths..responses"
+      ],
+      "severity": "warn",
+      "then": [
+        {
+          "function": "truthy",
+          "field": "500"
+        }
+      ],
+      "description": "Operation must have a  response defined.\r\n\r\n**Invalid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '501':\r\n      description: Bad Gateway\r\n      headers:\r\n        ...\r\n```\r\n\r\n**Valid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '429':\r\n        ...\r\n    '500':\r\n      description: Internal Server Error\r\n      headers:\r\n        ...\r\n```\n\n(Swagger 2.0 variant: checks the response code only; `content` does not exist in OAS2.)",
+      "message": "{{description}}. Missing {{property}}",
+      "formats": [
+        "oas2"
+      ]
+    },
+    "owasp:api4:2019-rate-limit-responses-429-oas2": {
+      "given": [
+        "$.paths..responses"
+      ],
+      "severity": "warn",
+      "then": [
+        {
+          "function": "truthy",
+          "field": "429"
+        }
+      ],
+      "description": "Operation must have a 429 response defined.\r\n\r\n**Invalid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '431':\r\n      description: Request Header Fields Too Large\r\n      headers:\r\n        ...\r\n```\r\n\r\n**Valid Example**\r\n\r\n```yaml lineNumbers\r\nget:\r\n  summary: Get User Info by User ID\r\n  tags: []\r\n  responses:\r\n    '200':\r\n       ...\r\n    '400':\r\n      ...\r\n    '429':\r\n      description: Too Many Requests\r\n      headers:\r\n        ...\r\n```\n\n(Swagger 2.0 variant: checks the response code only; `content` does not exist in OAS2.)",
+      "message": "{{description}}. Missing {{property}}",
+      "formats": [
+        "oas2"
+      ]
+    },
+    "owasp:api4:2019-rate-limit-oas2": {
+      "given": [
+        "$.paths[*]..responses[?(@property.match(/^(2|4)/))]"
+      ],
+      "severity": "error",
+      "then": {
+        "function": "schema",
+        "functionOptions": {
+          "schema": {
+            "type": "object",
+            "oneOf": [
+              {
+                "required": [
+                  "RateLimit-Limit",
+                  "RateLimit-Reset"
+                ]
+              },
+              {
+                "required": [
+                  "X-RateLimit-Limit"
+                ]
+              },
+              {
+                "required": [
+                  "X-Rate-Limit-Limit"
+                ]
+              }
+            ]
+          }
+        },
+        "field": "headers"
+      },
+      "description": "Headers for 2xx and 4 xx responses must contain `RateLimit-Limit`, `RateLimit-Reset`, `X-RateLimit-Limit`, or `X-Rate-Limit-Limit`.\n\nProper rate limits avoid attackers overloading the API. There are many ways to implement rate-limiting, but most of them involve using HTTP headers, and there are two popular ways to do that:\n\nIETF Draft HTTP RateLimit Headers:. https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/\n\nCustomer headers like X-Rate-Limit-Limit (Twitter: https://developer.twitter.com/en/docs/twitter-api/rate-limits) or X-RateLimit-Limit (GitHub: https://docs.github.com/en/rest/overview/resources-in-the-rest-api)\n\n**Invalid Example**\n\nThe 200 response does not contain rate-limiting headers.\n\n```yaml lineNumbers\nresponses:\n'200':\n   description: User Not Found\n```\n\n**Valid Example**\n\nThe 200 response contains rate-limiting headers.\n\n```yaml lineNumbers\nresponses:\n  '200':\n    headers:\n      RateLimit-Limit:\n        description: The number of allowed requests in the current period.\n        schema:\n          type: integer\n      RateLimit-Reset:\n        description: The number of seconds left in the current period.\n        schema:\n          type: integer\n```",
+      "message": "All 2XX and 4XX responses should define rate limiting headers.",
+      "formats": [
+        "oas2"
       ]
     }
   },
