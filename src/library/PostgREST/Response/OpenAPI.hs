@@ -262,7 +262,7 @@ makePreferParam ts =
         ( (mempty :: ParamOtherSchema)
             & in_ .~ ParamHeader
             & type_ ?~ SwaggerString
-            & enum_ .~ if null enu then Nothing else JSON.decode (JSON.encode enu)
+            & enum_ .~ (if null enu then Nothing else JSON.decode (JSON.encode enu))
             & pattern .~ (if null enu then Just preferPattern else Nothing)
             & maxLength .~ (if null enu then Just 200 else Nothing)
         )
