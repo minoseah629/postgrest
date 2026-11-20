@@ -252,6 +252,13 @@ let
               # prepare codecov json report
               ${hpc-codecov}/bin/hpc-codecov --mix=.hpc --out=coverage/codecov.json coverage/postgrest.tix
 
+              # per-suite coverage, used to compare test levels (scripts/coverage-levels.py)
+              mkdir -p coverage/suites
+              for suite in io big_schema replica spec observability hasql-pool hasql-statements; do
+                cp "$tmpdir"/"$suite".tix coverage/suites/"$suite".tix
+                ${hpc-codecov}/bin/hpc-codecov --mix=.hpc --out=coverage/suites/"$suite".json coverage/suites/"$suite".tix
+              done
+
               # create html and stdout reports
               ${ghc}/bin/hpc markup --destdir=coverage coverage/postgrest.tix
               echo "postgrest-coverage: To see the results, visit file://$(pwd)/coverage/hpc_index.html"
