@@ -254,8 +254,15 @@ let
 
               # per-suite coverage, used to compare test levels (scripts/coverage-levels.py)
               mkdir -p coverage/suites
-              for suite in io big_schema replica spec observability hasql-pool hasql-statements; do
+              # the io suites write one .tix file per test (io.<test>.tix), so sum them per suite
+              for suite in io big_schema replica; do
+                ${ghc}/bin/hpc sum --union --exclude=Paths_postgrest --output=coverage/suites/"$suite".tix \
+                  "$tmpdir"/"$suite"*.tix
+              done
+              for suite in spec observability hasql-pool hasql-statements; do
                 cp "$tmpdir"/"$suite".tix coverage/suites/"$suite".tix
+              done
+              for suite in io big_schema replica spec observability hasql-pool hasql-statements; do
                 ${hpc-codecov}/bin/hpc-codecov --mix=.hpc --out=coverage/suites/"$suite".json coverage/suites/"$suite".tix
               done
 
