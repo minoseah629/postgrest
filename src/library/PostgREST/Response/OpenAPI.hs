@@ -230,7 +230,8 @@ makeProperty tbl rels col = (colName col, Inline s)
         & description .~ d
         & enum_ .~ e
         & format .~ toSwaggerFormat (colType col)
-        & maxLength .~ (fromIntegral <$> colMaxLen col)
+        -- a uuid always has the canonical 36 character text form
+        & maxLength .~ ((fromIntegral <$> colMaxLen col) <|> (if colType col == "uuid" then Just 36 else Nothing))
         & type_ .~ toSwaggerType (colType col)
         & items .~ (SwaggerItemsObject <$> makePropertyItems (colType col))
 

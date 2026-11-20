@@ -36,5 +36,8 @@ for _ in $(seq 1 30); do
 done
 curl -fsS -o /dev/null http://localhost:3000/ || { echo "PostgREST did not start; log:"; cat /tmp/postgrest-lint.log; exit 2; }
 
+# keep the raw spec too, so it can be linted elsewhere (e.g. with Spectral)
+curl -fsS -H "Accept: application/openapi+json" http://localhost:3000/ -o postgrest-openapi-code.json
+
 scripts/lint-openapi.sh "${@:---raw}" http://localhost:3000/ 2>&1 | tee lint-results-code.txt
 exit "${PIPESTATUS[0]}"

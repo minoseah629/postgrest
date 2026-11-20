@@ -105,6 +105,13 @@ spec withConfig = withConfig baseCfg $ describe "OpenAPI" $ do
         errorRef "500" `shouldBe` Just "#/definitions/PostgrestError"
         r ^? key "definitions" . key "PostgrestError" . key "properties" . key "message" . key "maxLength" `shouldBe` Just (Number 2000)
 
+    it "bounds uuid columns with their canonical length" $ do
+      r <- simpleBody <$> get "/"
+
+      liftIO $
+        r ^? key "definitions" . key "profiles" . key "properties" . key "id" . key "maxLength"
+          `shouldBe` Just (Number 36)
+
     it "constrains query parameters to PostgREST's grammar" $ do
       r <- simpleBody <$> get "/"
 
