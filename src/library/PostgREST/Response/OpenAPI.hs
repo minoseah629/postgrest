@@ -4,7 +4,11 @@
 -- |
 -- Module      : PostgREST.OpenAPI
 -- Description : Generates the OpenAPI output
-module PostgREST.Response.OpenAPI (encode) where
+module PostgREST.Response.OpenAPI
+  ( encode
+  , toOperationId
+  , withRateLimit
+  ) where
 
 import Control.Arrow ((&&&))
 import Control.Lens (at, over, (%~), (.~), (?~))

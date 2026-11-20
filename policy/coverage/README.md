@@ -20,7 +20,7 @@ Set the thresholds from a measured baseline (a few points below it, then ratchet
 
 ## Test levels
 
-The suites fall into levels (`levels.json`): **unit** (doctests, not measurable by hpc), **component** (`hasql-pool`, `hasql-statements`), **api** (`spec`, `observability`, in-process against Postgres) and **e2e** (`io`, `big_schema`, `replica`, the real binary).
+The suites fall into levels (`levels.json`): **unit** (`test/unit`, compiled pure-function tests; the doctests run in GHCi and cannot be measured by hpc), **component** (`hasql-pool`, `hasql-statements`), **api** (`spec`, `observability`, in-process against Postgres) and **e2e** (`io`, `big_schema`, `replica`, the real binary).
 
 `postgrest-coverage` now keeps per-suite coverage in `coverage/suites/`. `scripts/coverage-levels.py` turns it into `coverage/levels.json`: line coverage per level, all measured over the same lines (those in the merged report). `levels.rego` then checks the ordering:
 

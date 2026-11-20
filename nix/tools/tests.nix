@@ -63,6 +63,19 @@ let
           ${cabal-install}/bin/cabal v2-run ${devCabalOptions} test:hasql-statements -- "''${_arg_leftovers[@]}"
       '';
 
+  testUnit =
+    checkedShellScript
+      {
+        name = "postgrest-test-unit";
+        docs = "Run the unit tests (pure functions, no database).";
+        args = [ "ARG_LEFTOVERS([hspec arguments])" ];
+        workingDir = "/";
+        withEnv = postgrest.env;
+      }
+      ''
+        ${cabal-install}/bin/cabal v2-run ${devCabalOptions} test:unit -- "''${_arg_leftovers[@]}"
+      '';
+
   testDoctests =
     checkedShellScript
       {
@@ -186,7 +199,7 @@ let
             rm -rf coverage/*
 
             # build once before running all the tests
-            ${cabal-install}/bin/cabal v2-build ${devCabalOptions} exe:postgrest lib:postgrest test:spec test:observability test:hasql-pool test:hasql-statements
+            ${cabal-install}/bin/cabal v2-build ${devCabalOptions} exe:postgrest lib:postgrest test:spec test:observability test:hasql-pool test:hasql-statements test:unit
 
             (
               trap 'echo Found dead code: Check file list above.' ERR ;
@@ -222,12 +235,15 @@ let
               ${withTools.withPg} \
               ${cabal-install}/bin/cabal v2-run ${devCabalOptions} test:hasql-statements
 
+            HPCTIXFILE="$tmpdir"/unit.tix \
+              ${cabal-install}/bin/cabal v2-run ${devCabalOptions} test:unit
+
             # Note: No coverage for doctests, as doctests leverage GHCi and GHCi does not support hpc
 
             # collect all the tix files
             ${ghc}/bin/hpc sum  --union --exclude=Paths_postgrest --output="$tmpdir"/tests.tix \
               "$tmpdir"/io*.tix "$tmpdir"/big_schema*.tix "$tmpdir"/replica*.tix "$tmpdir"/spec.tix \
-              "$tmpdir"/observability.tix "$tmpdir"/hasql-pool.tix "$tmpdir"/hasql-statements.tix
+              "$tmpdir"/observability.tix "$tmpdir"/hasql-pool.tix "$tmpdir"/hasql-statements.tix "$tmpdir"/unit.tix
 
             # prepare the overlay
             ${ghc}/bin/hpc overlay --output="$tmpdir"/overlay.tix test/coverage.overlay
@@ -259,10 +275,10 @@ let
                 ${ghc}/bin/hpc sum --union --exclude=Paths_postgrest --output=coverage/suites/"$suite".tix \
                   "$tmpdir"/"$suite"*.tix
               done
-              for suite in spec observability hasql-pool hasql-statements; do
+              for suite in spec observability hasql-pool hasql-statements unit; do
                 cp "$tmpdir"/"$suite".tix coverage/suites/"$suite".tix
               done
-              for suite in io big_schema replica spec observability hasql-pool hasql-statements; do
+              for suite in io big_schema replica spec observability hasql-pool hasql-statements unit; do
                 ${hpc-codecov}/bin/hpc-codecov --mix=.hpc --out=coverage/suites/"$suite".json coverage/suites/"$suite".tix
               done
 
@@ -309,6 +325,7 @@ buildToolbox {
       testSpec
       testObservability
       testHasql
+      testUnit
       testDoctests
       testSpecIdempotence
       testIO
