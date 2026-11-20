@@ -182,6 +182,7 @@ baseCfg =
           configLogLevel = LogCrit,
           configLogQuery = False,
           configOpenApiMode = OAFollowPriv,
+          configOpenApiRateLimit = Nothing,
           configOpenApiSecurityActive = False,
           configOpenApiServerProxyUri = Nothing,
           configServerCorsAllowedOrigins = [],

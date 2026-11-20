@@ -64,6 +64,7 @@ dbSettingsNames =
           "jwt_secret_is_base64",
           "jwt_cache_max_entries",
           "openapi_mode",
+          "openapi_rate_limit",
           "openapi_security_active",
           "openapi_server_proxy_uri",
           "server_cors_allowed_origins",

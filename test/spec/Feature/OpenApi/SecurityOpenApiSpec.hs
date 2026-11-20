@@ -42,3 +42,22 @@ spec withConfig = withConfig (baseCfg{configOpenApiSecurityActive = True}) $
               }
             }
           |]
+
+rateLimitSpec :: SpecWithConfig
+rateLimitSpec withConfig = withConfig (baseCfg{configOpenApiRateLimit = Just 10}) $
+  describe "Rate limit documented" $ do
+    it "adds a 429 response with Retry-After to operations" $ do
+      r <- simpleBody <$> get "/"
+      liftIO $ do
+        (r ^? key "paths" . key "/items" . key "get" . key "responses" . key "429" . key "headers" . key "Retry-After" . key "type")
+          `shouldBe` Just "integer"
+        (r ^? key "paths" . key "/items" . key "get" . key "responses" . key "200" . key "headers" . key "X-RateLimit-Limit" . key "type")
+          `shouldBe` Just "integer"
+        (r ^? key "paths" . key "/items" . key "get" . key "responses" . key "401" . key "headers" . key "X-RateLimit-Limit" . key "type")
+          `shouldBe` Just "integer"
+
+    it "does not add rate-limit headers to 5xx responses" $ do
+      r <- simpleBody <$> get "/"
+      liftIO $
+        (r ^? key "paths" . key "/items" . key "get" . key "responses" . key "500" . key "headers")
+          `shouldBe` Nothing

@@ -106,3 +106,8 @@ Error responses and limits
 Every operation documents the ``400``, ``401`` and ``500`` responses, whose body is described by the ``PostgrestError`` definition (``code``, ``message``, ``details``, ``hint``). Query and header parameters carry ``pattern`` and ``maxLength`` constraints that match PostgREST's own syntax, and collection responses declare ``maxItems`` when :ref:`db-max-rows` is set.
 
 PostgREST does not rate limit requests. If you deploy a rate limiting proxy in front of it, document ``429`` and the rate limit headers there.
+
+Rate limits
+-----------
+
+If :ref:`openapi-rate-limit` is set, every operation documents a ``429`` response with a ``Retry-After`` header, and all 2xx/4xx responses document an ``X-RateLimit-Limit`` header. PostgREST does not enforce the limit; enforce it in your gateway.

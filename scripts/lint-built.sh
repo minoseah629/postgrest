@@ -23,6 +23,7 @@ export PGRST_DB_ANON_ROLE=anon
 export PGRST_JWT_SECRET="reallyreallyreallyreallyverysafe123"
 export PGRST_OPENAPI_SERVER_PROXY_URI=https://localhost
 export PGRST_OPENAPI_SECURITY_ACTIVE=true
+export PGRST_OPENAPI_RATE_LIMIT=10
 export PGRST_DB_MAX_ROWS=1000
 export PGRST_SERVER_PORT=3000
 

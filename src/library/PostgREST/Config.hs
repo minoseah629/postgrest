@@ -113,6 +113,7 @@ data AppConfig = AppConfig
     configLogLevel :: LogLevel,
     configLogQuery :: Bool,
     configOpenApiMode :: OpenAPIMode,
+    configOpenApiRateLimit :: Maybe Integer,
     configOpenApiSecurityActive :: Bool,
     configOpenApiServerProxyUri :: Maybe Text,
     configServerCorsAllowedOrigins :: [Text],
@@ -201,6 +202,7 @@ toText conf =
               ("log-level", q . dumpLogLevel . configLogLevel),
               ("log-query", T.toLower . show . configLogQuery),
               ("openapi-mode", q . dumpOpenApiMode . configOpenApiMode),
+              ("openapi-rate-limit", maybe "\"\"" show . configOpenApiRateLimit),
               ("openapi-security-active", T.toLower . show . configOpenApiSecurityActive),
               ("openapi-server-proxy-uri", q . fromMaybe mempty . configOpenApiServerProxyUri),
               ("server-cors-allowed-origins", q . T.intercalate "," . configServerCorsAllowedOrigins),
@@ -333,6 +335,7 @@ parser optPath env dbSettings roleSettings roleIsolationLvl =
     <*> parseLogLevel "log-level"
     <*> (fromMaybe False <$> optBool "log-query")
     <*> parseOpenAPIMode "openapi-mode"
+    <*> optInt "openapi-rate-limit"
     <*> (fromMaybe False <$> optBool "openapi-security-active")
     <*> parseOpenAPIServerProxyURI "openapi-server-proxy-uri"
     <*> parseCORSAllowedOrigins "server-cors-allowed-origins"
@@ -805,6 +808,10 @@ exampleConfigFile =
       "## Determine if the OpenAPI output should follow or ignore role privileges or be disabled entirely.",
       "## Admitted values: follow-privileges, ignore-privileges, disabled",
       "openapi-mode = \"follow-privileges\"",
+      "",
+      "## Requests per second enforced by an upstream gateway. Documentation only: when set, the OpenAPI output",
+      "## documents 429 responses and rate-limit headers. PostgREST does not enforce the limit.",
+      "# openapi-rate-limit = 10",
       "",
       "## Base url for the OpenAPI output",
       "openapi-server-proxy-uri = \"\"",

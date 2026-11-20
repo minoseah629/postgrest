@@ -831,6 +831,21 @@ openapi-mode
     # Throws a `404 Not Found` error when accessing the API root path
     openapi-mode = "disabled"
 
+.. _openapi-rate-limit:
+
+openapi-rate-limit
+------------------
+
+  =============== =================================
+  **Type**        Integer
+  **Default**     None
+  **Reloadable**  Y
+  **Environment** PGRST_OPENAPI_RATE_LIMIT
+  **In-Database** pgrst.openapi_rate_limit
+  =============== =================================
+
+Requests per second enforced by an upstream gateway (reverse proxy, API gateway). This is documentation only: PostgREST does **not** enforce the limit. When set, the :ref:`OpenAPI output <open-api>` documents a :code:`429` response on every operation, a :code:`Retry-After` header on it, and an :code:`X-RateLimit-Limit` header on every 2xx and 4xx response.
+
 .. _openapi-security-active:
 
 openapi-security-active

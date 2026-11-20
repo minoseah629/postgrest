@@ -130,6 +130,7 @@ main = do
                 ("Feature.OpenApi.ProxySpec", Feature.OpenApi.ProxySpec.spec),
                 ("Feature.OpenApi.RootSpec", Feature.OpenApi.RootSpec.spec),
                 ("Feature.OpenApi.SecurityOpenApiSpec", Feature.OpenApi.SecurityOpenApiSpec.spec),
+                ("Feature.OpenApi.SecurityOpenApiSpec.rateLimit", Feature.OpenApi.SecurityOpenApiSpec.rateLimitSpec),
                 ("Feature.OptionsSpec", Feature.OptionsSpec.spec),
                 ("Feature.Query.AggregateFunctionsSpec.allowed", Feature.Query.AggregateFunctionsSpec.allowed),
                 ("Feature.Query.AggregateFunctionsSpec.disallowed", Feature.Query.AggregateFunctionsSpec.disallowed),

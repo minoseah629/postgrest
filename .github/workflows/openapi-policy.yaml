@@ -38,6 +38,7 @@ jobs:
             -e PGRST_JWT_SECRET="reallyreallyreallyreallyverysafe123" \
             -e PGRST_OPENAPI_SERVER_PROXY_URI=https://localhost \
             -e PGRST_OPENAPI_SECURITY_ACTIVE=true \
+            -e PGRST_OPENAPI_RATE_LIMIT=10 \
             -e PGRST_DB_MAX_ROWS=1000 \
             postgrest/postgrest
           for i in $(seq 1 30); do

@@ -7,7 +7,7 @@
 module PostgREST.Response.OpenAPI (encode) where
 
 import Control.Arrow ((&&&))
-import Control.Lens (at, (.~), (?~))
+import Control.Lens (at, over, (%~), (.~), (?~))
 import Data.HashMap.Strict.InsOrd (InsOrdHashMap, fromList)
 import Data.Maybe (fromJust)
 import Data.String (IsString (..))
@@ -19,6 +19,7 @@ import Data.Aeson qualified as JSON
 import Data.ByteString.Char8 qualified as BS
 import Data.ByteString.Lazy qualified as LBS
 import Data.HashMap.Strict qualified as HM
+import Data.HashMap.Strict.InsOrd qualified as InsOrd
 import Data.HashSet.InsOrd qualified as Set
 import Data.Text qualified as T
 
@@ -61,6 +62,7 @@ encode versions conf sCache tables procs schemaDescription =
       schemaDescription
       (configOpenApiSecurityActive conf)
       (configDbMaxRows conf)
+      (configOpenApiRateLimit conf)
 
 -- | Name of the shared schema describing PostgREST error bodies.
 errorSchemaName :: Text
@@ -100,6 +102,36 @@ withErrorResponses op =
     & at 400 ?~ makeErrorResponse "Bad request"
     & at 401 ?~ makeErrorResponse "Missing, invalid or expired JWT"
     & at 500 ?~ makeErrorResponse "Internal server error"
+
+-- | Documents a gateway-enforced rate limit (PostgREST itself does not enforce it):
+-- a 429 response on every operation plus rate-limit headers on 2xx/4xx responses.
+withRateLimit :: Maybe Integer -> Swagger -> Swagger
+withRateLimit Nothing = id
+withRateLimit (Just limit) = over (paths . traverse) onPathItem
+  where
+    onPathItem pathItem =
+      pathItem
+        & get %~ fmap onOperation
+        & post %~ fmap onOperation
+        & patch %~ fmap onOperation
+        & delete %~ fmap onOperation
+    onOperation op =
+      (op & at 429 ?~ makeErrorResponse ("Too many requests, limit is " <> show limit <> " per second"))
+        & responses . responsesResponses %~ InsOrd.mapWithKey addHeaders
+    addHeaders code (Inline r)
+      | code `div` 100 `elem` [2, 4] =
+          Inline $ r & headers %~ (InsOrd.fromList (limitHeaders code) <>)
+    addHeaders _ other = other
+    limitHeaders code =
+      ("X-RateLimit-Limit", intHeader ("Requests per second allowed by the gateway (" <> show limit <> ")"))
+        : [("Retry-After", intHeader "Seconds to wait before retrying") | code == (429 :: Int)]
+    intHeader d =
+      Header (Just d) $
+        mempty
+          & type_ ?~ SwaggerInteger
+          & format ?~ "int32"
+          & minimum_ ?~ 0
+          & maximum_ ?~ 2147483647
 
 -- | Makes a name usable as an operationId (ASCII letters, digits and underscore).
 toOperationId :: Text -> Text
@@ -594,8 +626,9 @@ makeSecurityDefinitions secName allow
     secSchType = SecuritySchemeApiKey (ApiKeyParams "Authorization" ApiKeyHeader)
     secSchDescription = Just "Add the token prepending \"Bearer \" (without quotes) to it"
 
-postgrestSpec :: (Text, Text) -> RelationshipsMap -> [Routine] -> [Table] -> (Text, Text, Integer, Text) -> Maybe Text -> Bool -> Maybe Integer -> Swagger
-postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecurityDef maxRows =
+postgrestSpec :: (Text, Text) -> RelationshipsMap -> [Routine] -> [Table] -> (Text, Text, Integer, Text) -> Maybe Text -> Bool -> Maybe Integer -> Maybe Integer -> Swagger
+postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecurityDef maxRows rateLimit =
+  withRateLimit rateLimit $
   (mempty :: Swagger)
     & basePath ?~ T.unpack b
     & schemes ?~ [s']
