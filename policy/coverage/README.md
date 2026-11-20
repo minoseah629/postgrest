@@ -47,3 +47,15 @@ Measured with `postgrest-coverage` on the branch after rebasing onto upstream `m
 | e2e (`io`, `big_schema`, `replica`) | 74.40% | `level_min` 71 |
 
 Levels ascend (unit < component < api < e2e), so `level_direction: "ascending"` passes with no tolerance. The e2e margin over api is 3.2 points; that is the first check to trip.
+
+## Test execution time
+
+`scripts/test-timings.py` (run inside `nix-shell`, about 6 minutes) runs each level's suites, reads the execution time and test count each runner reports and writes `coverage/timings.json`. `timing.rego` enforces that the fastest level (`time_fastest_level`, default `unit`) is not slower than any other level:
+
+| Rule | Fails when |
+|---|---|
+| `fastest-level-slower-total` | unit's total execution time > another level's (plus `time_tolerance_s`) |
+| `fastest-level-slower-per-test` | unit's mean ms per test > another level's mean (times `time_per_test_ratio`) |
+| `level-tests-failed` | a level's tests failed, so its time is not comparable |
+
+Times are the runner-reported execution times, so fixed startup cost (cabal, a temporary Postgres) does not distort the per-test mean; the whole-command wall time is kept in the JSON for reference.

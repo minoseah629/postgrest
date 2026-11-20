@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Evaluate the coverage policy against coverage/summary.json.
-# Usage: scripts/lint-coverage.sh [summary.json [levels.json]]   (run `postgrest-coverage` first, then
+# Usage: scripts/lint-coverage.sh [summary.json [levels.json [timings.json]]]   (run `postgrest-coverage` first, then
 # scripts/coverage-summary.py). Exit 1 if any error-level violation.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -21,4 +21,13 @@ if [[ -f "$LEVELS" ]]; then
   m=$(opa eval -f raw -d "$D/levels.rego" -d "$D/thresholds.json" -i "$LEVELS" 'count(data.levels.errors)')
   echo "Level errors: $m"
 fi
-[[ "$n" == "0" && "$m" == "0" ]]
+# Test execution time per level: needs coverage/timings.json from scripts/test-timings.py
+TIMINGS="${3:-$ROOT/coverage/timings.json}"
+t=0
+if [[ -f "$TIMINGS" ]]; then
+  echo "== Test execution time policy =="
+  opa eval -f pretty -d "$D/timing.rego" -d "$D/thresholds.json" -i "$TIMINGS" 'data.timing.violation'
+  t=$(opa eval -f raw -d "$D/timing.rego" -d "$D/thresholds.json" -i "$TIMINGS" 'count(data.timing.errors)')
+  echo "Timing errors: $t"
+fi
+[[ "$n" == "0" && "$m" == "0" && "$t" == "0" ]]
