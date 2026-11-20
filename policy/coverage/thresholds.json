@@ -9,6 +9,7 @@
     "level_direction": "ascending",
     "level_tolerance": 0,
     "level_min": {
+      "unit": 1,
       "api": 68,
       "e2e": 71
     }

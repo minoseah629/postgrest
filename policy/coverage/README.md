@@ -41,8 +41,9 @@ Measured with `postgrest-coverage` on the branch after rebasing onto upstream `m
 | Overall line coverage | 92.13% | `total_min` 90 |
 | `Response/OpenAPI.hs` | 99.39% | 97 |
 | `Config.hs` | 98.48% | 95 |
+| unit (`test/unit`) | 1.33% | `level_min` 1 |
 | component (hasql suites) | 8.89% | none |
 | api (`spec`, `observability`) | 71.24% | `level_min` 68 |
 | e2e (`io`, `big_schema`, `replica`) | 74.40% | `level_min` 71 |
 
-Levels ascend (component < api < e2e), so `level_direction: "ascending"` passes with no tolerance. The e2e margin over api is 3.2 points; that is the first check to trip.
+Levels ascend (unit < component < api < e2e), so `level_direction: "ascending"` passes with no tolerance. The e2e margin over api is 3.2 points; that is the first check to trip.
