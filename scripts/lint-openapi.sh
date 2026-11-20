@@ -19,8 +19,10 @@ else
   cp "$SRC" "$SPEC"
 fi
 
-SPECTRAL=(spectral)
-command -v spectral >/dev/null || SPECTRAL=(npx --yes @stoplight/spectral-cli)
+SPECTRAL=()
+if command -v spectral >/dev/null; then SPECTRAL=(spectral)
+elif command -v npx >/dev/null; then SPECTRAL=(npx --yes @stoplight/spectral-cli)
+fi
 
 if [[ "$RAW" == "0" ]]; then
   python3 "$ROOT/scripts/patch-openapi.py" "$SPEC" "$SPEC.patched" && mv "$SPEC.patched" "$SPEC"
@@ -29,7 +31,11 @@ fi
 status=0
 
 echo "== Spectral (OWASP ruleset) =="
-"${SPECTRAL[@]}" lint "$SPEC" -r "$ROOT/policy/openapi/spectral/.spectral.json" --fail-severity=error || status=1
+if [[ ${#SPECTRAL[@]} -gt 0 ]]; then
+  "${SPECTRAL[@]}" lint "$SPEC" -r "$ROOT/policy/openapi/spectral/.spectral.json" --fail-severity=error || status=1
+else
+  echo "spectral and npx not found; skipping Spectral (install Node or run: npm i -g @stoplight/spectral-cli)"
+fi
 
 echo
 echo "== OPA (Rego) =="
