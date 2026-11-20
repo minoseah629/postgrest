@@ -211,6 +211,9 @@ makeProperty tbl rels col = (colName col, Inline s)
         fTblCol = (,) <$> fTbl <*> fCol
       in
         (\(a, b) -> T.intercalate "" ["This is a Foreign Key to `", a, ".", b, "`.<fk table='", a, "' column='", b, "'/>"]) <$> fTblCol
+    -- a default like gen_random_uuid() is a SQL expression, not a valid example for format "uuid"
+    isUuidFunctionDefault :: Bool
+    isUuidFunctionDefault = colType col == "uuid" && maybe False (T.isInfixOf "(") (colDefault col)
     pk :: Bool
     pk = colName col `elem` tablePKCols tbl
     n =
@@ -226,7 +229,7 @@ makeProperty tbl rels col = (colName col, Inline s)
         colDescription col
     s =
       (mempty :: Schema)
-        & default_ .~ (JSON.decode . toUtf8Lazy . parseDefault (colType col) =<< colDefault col)
+        & default_ .~ (if isUuidFunctionDefault then Nothing else JSON.decode . toUtf8Lazy . parseDefault (colType col) =<< colDefault col)
         & description .~ d
         & enum_ .~ e
         & format .~ toSwaggerFormat (colType col)
