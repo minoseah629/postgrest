@@ -1,0 +1,9 @@
+{
+  "order": ["unit", "component", "api", "e2e"],
+  "levels": {
+    "unit": {"suites": ["doctests"], "note": "doctests run in GHCi, which has no hpc coverage: not measurable"},
+    "component": {"suites": ["hasql-pool", "hasql-statements"]},
+    "api": {"suites": ["spec", "observability"]},
+    "e2e": {"suites": ["io", "big_schema", "replica"]}
+  }
+}

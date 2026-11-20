@@ -31,3 +31,6 @@ gen_private.json
 .ruff_cache
 postgrest-module-graph.png
 .ghc.environment.*
+
+# policy/coverage holds the coverage policy (Rego), not generated reports
+!/policy/coverage/
