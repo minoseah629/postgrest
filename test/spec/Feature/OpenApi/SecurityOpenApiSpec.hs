@@ -61,3 +61,10 @@ rateLimitSpec withConfig = withConfig (baseCfg{configOpenApiRateLimit = Just 10}
       liftIO $
         (r ^? key "paths" . key "/items" . key "get" . key "responses" . key "500" . key "headers")
           `shouldBe` Nothing
+
+contactEmailSpec :: SpecWithConfig
+contactEmailSpec withConfig = withConfig (baseCfg{configOpenApiContactEmail = Just "api@example.org"}) $
+  describe "Contact email" $
+    it "is published in info.contact" $ do
+      r <- simpleBody <$> get "/"
+      liftIO $ (r ^? key "info" . key "contact" . key "email") `shouldBe` Just "api@example.org"

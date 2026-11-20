@@ -100,6 +100,7 @@ baseCfg =
           configJwtCacheMaxEntries = 10,
           configLogLevel = LogCrit,
           configLogQuery = False,
+          configOpenApiContactEmail = Nothing,
           configOpenApiMode = OAFollowPriv,
           configOpenApiRateLimit = Nothing,
           configOpenApiSecurityActive = False,

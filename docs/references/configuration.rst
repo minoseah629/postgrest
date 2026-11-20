@@ -831,6 +831,21 @@ openapi-mode
     # Throws a `404 Not Found` error when accessing the API root path
     openapi-mode = "disabled"
 
+.. _openapi-contact-email:
+
+openapi-contact-email
+---------------------
+
+  =============== =================================
+  **Type**        String
+  **Default**     None
+  **Reloadable**  Y
+  **Environment** PGRST_OPENAPI_CONTACT_EMAIL
+  **In-Database** pgrst.openapi_contact_email
+  =============== =================================
+
+Sets :code:`info.contact.email` in the :ref:`OpenAPI output <open-api>`.
+
 .. _openapi-rate-limit:
 
 openapi-rate-limit

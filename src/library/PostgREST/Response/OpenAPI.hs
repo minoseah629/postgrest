@@ -63,6 +63,7 @@ encode versions conf sCache tables procs schemaDescription =
       (configOpenApiSecurityActive conf)
       (configDbMaxRows conf)
       (configOpenApiRateLimit conf)
+      (configOpenApiContactEmail conf)
 
 -- | Name of the shared schema describing PostgREST error bodies.
 errorSchemaName :: Text
@@ -626,8 +627,8 @@ makeSecurityDefinitions secName allow
     secSchType = SecuritySchemeApiKey (ApiKeyParams "Authorization" ApiKeyHeader)
     secSchDescription = Just "Add the token prepending \"Bearer \" (without quotes) to it"
 
-postgrestSpec :: (Text, Text) -> RelationshipsMap -> [Routine] -> [Table] -> (Text, Text, Integer, Text) -> Maybe Text -> Bool -> Maybe Integer -> Maybe Integer -> Swagger
-postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecurityDef maxRows rateLimit =
+postgrestSpec :: (Text, Text) -> RelationshipsMap -> [Routine] -> [Table] -> (Text, Text, Integer, Text) -> Maybe Text -> Bool -> Maybe Integer -> Maybe Integer -> Maybe Text -> Swagger
+postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecurityDef maxRows rateLimit contactEmail =
   withRateLimit rateLimit $
   (mempty :: Swagger)
     & basePath ?~ T.unpack b
@@ -641,6 +642,7 @@ postgrestSpec (prettyVersion, docsVersion) rels pds ti (s, h, p, b) sd allowSecu
                ?~ ( (mempty :: Contact)
                       & name ?~ "PostgREST"
                       & url ?~ URL "https://postgrest.org"
+                      & email .~ contactEmail
                   )
              & license
                ?~ ( (fromString "MIT" :: License)

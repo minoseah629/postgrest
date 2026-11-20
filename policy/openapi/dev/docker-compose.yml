@@ -31,6 +31,7 @@ services:
       # Adds securityDefinitions (JWT) and a global security requirement to the spec.
       PGRST_OPENAPI_SECURITY_ACTIVE: "true"
       PGRST_OPENAPI_RATE_LIMIT: "10"
+      PGRST_OPENAPI_CONTACT_EMAIL: api@example.org
       # Caps result sets; the patched spec documents this as maxItems.
       PGRST_DB_MAX_ROWS: "1000"
 

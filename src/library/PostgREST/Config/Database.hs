@@ -63,6 +63,7 @@ dbSettingsNames =
           "jwt_secret",
           "jwt_secret_is_base64",
           "jwt_cache_max_entries",
+          "openapi_contact_email",
           "openapi_mode",
           "openapi_rate_limit",
           "openapi_security_active",

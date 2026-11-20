@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file. From versio
 
 - OpenAPI: document 400/401/500 error responses with a shared `PostgrestError` schema, add `operationId`s, operation/parameter descriptions, top-level tag descriptions, `info.contact` and `info.license`, constrain query/header parameters with `pattern`/`maxLength`, restrict `Range-Unit` to `items`, and set `maxItems` on collection responses from `db-max-rows`
 - Add `openapi-rate-limit` config to document a gateway-enforced rate limit (429 response, `Retry-After` and `X-RateLimit-Limit` headers) in the OpenAPI output; PostgREST does not enforce it
+- Add `openapi-contact-email` config to set `info.contact.email` in the OpenAPI output
 - Add pool contention time metric by @diogob in #5377
 - Speed up cases where there is no connection pool contention by avoiding a timer creation by @diogob in #5409
 - Add schema cache query logging on `log-query=true` and `log-level=info|debug` by @steve-chavez in #5285

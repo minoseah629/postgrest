@@ -112,6 +112,7 @@ data AppConfig = AppConfig
     configJwtCacheMaxEntries :: Int,
     configLogLevel :: LogLevel,
     configLogQuery :: Bool,
+    configOpenApiContactEmail :: Maybe Text,
     configOpenApiMode :: OpenAPIMode,
     configOpenApiRateLimit :: Maybe Integer,
     configOpenApiSecurityActive :: Bool,
@@ -201,6 +202,7 @@ toText conf =
               ("jwt-cache-max-entries", show . configJwtCacheMaxEntries),
               ("log-level", q . dumpLogLevel . configLogLevel),
               ("log-query", T.toLower . show . configLogQuery),
+              ("openapi-contact-email", q . fromMaybe mempty . configOpenApiContactEmail),
               ("openapi-mode", q . dumpOpenApiMode . configOpenApiMode),
               ("openapi-rate-limit", maybe "\"\"" show . configOpenApiRateLimit),
               ("openapi-security-active", T.toLower . show . configOpenApiSecurityActive),
@@ -334,6 +336,7 @@ parser optPath env dbSettings roleSettings roleIsolationLvl =
     <*> (fromMaybe 1000 <$> optInt "jwt-cache-max-entries")
     <*> parseLogLevel "log-level"
     <*> (fromMaybe False <$> optBool "log-query")
+    <*> optString "openapi-contact-email"
     <*> parseOpenAPIMode "openapi-mode"
     <*> optInt "openapi-rate-limit"
     <*> (fromMaybe False <$> optBool "openapi-security-active")
@@ -804,6 +807,9 @@ exampleConfigFile =
       "",
       "## Log the SQL query at the current log-level.",
       "log-query = false",
+      "",
+      "## Contact email published in the OpenAPI output (info.contact.email)",
+      "# openapi-contact-email = \"\"",
       "",
       "## Determine if the OpenAPI output should follow or ignore role privileges or be disabled entirely.",
       "## Admitted values: follow-privileges, ignore-privileges, disabled",
