@@ -26,6 +26,9 @@ export PGRST_OPENAPI_SECURITY_ACTIVE=true
 export PGRST_DB_MAX_ROWS=1000
 export PGRST_SERVER_PORT=3000
 
+# the dev build is coverage-instrumented; a .tix file from an earlier build makes it exit with "Hpc failure"
+rm -f postgrest.tix
+
 "$BIN" >/tmp/postgrest-lint.log 2>&1 &
 PID=$!
 trap 'kill $PID 2>/dev/null || true' EXIT
