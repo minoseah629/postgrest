@@ -19,3 +19,23 @@ Requires `opa` and `spectral` (or `npx`). Spectral fails on errors; OPA fails wh
 
 - PostgREST generates the spec from the database, so many findings (HTTP-only schemes, no `securityDefinitions`, missing 401/429/500 responses) are PostgREST defaults. Fix them in a gateway or by post-processing the spec.
 - The Rego rules check `#/definitions` and operations. They do not lint the shared `#/parameters` entries, which Spectral does.
+
+## What can be fixed where
+
+`dev/docker-compose.yml` + `dev/seed.sql` are a hardened example stack:
+
+| Finding | Fix | Where |
+|---|---|---|
+| HTTP-only `schemes` | `openapi-server-proxy-uri=https://...` | PostgREST config (TLS terminates at a proxy) |
+| No auth scheme / unprotected writes | `openapi-security-active=true` | PostgREST config |
+| Unbounded strings (`maxLength`) | use `varchar(n)` instead of `text` | database schema |
+| String without format/pattern | `enum` types, `format` via domain types | database schema |
+| Missing 401/429/500 responses, rate-limit headers, array `maxItems` | PostgREST never emits these | gateway + spec post-processing, or scope these rules to a gateway-owned spec |
+
+Run it:
+
+```bash
+docker rm -f pgrst pgdb 2>/dev/null; docker network rm pgrst 2>/dev/null   # clear the earlier manual containers
+docker compose -f policy/openapi/dev/docker-compose.yml up -d
+scripts/lint-openapi.sh > lint-results-hardened.txt 2>&1
+```
