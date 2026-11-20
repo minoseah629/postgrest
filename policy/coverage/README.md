@@ -59,3 +59,14 @@ Levels ascend (unit < component < api < e2e), so `level_direction: "ascending"` 
 | `level-tests-failed` | a level's tests failed, so its time is not comparable |
 
 Times are the runner-reported execution times, so fixed startup cost (cabal, a temporary Postgres) does not distort the per-test mean; the whole-command wall time is kept in the JSON for reference.
+
+### Baseline (2026-11-20)
+
+| Level | Execution time | Tests | Mean per test |
+|---|--:|--:|--:|
+| unit | 0.0 s | 11 | 0.18 ms |
+| component | 7.7 s | 30 | 258 ms |
+| api | 25.6 s | 1,370 | 18.7 ms |
+| e2e | 226.8 s | 246 | 922 ms |
+
+Unit is the fastest level on both measures, so the policy passes. Component and e2e cost the most per test because each test touches a database or starts the real server; the 1,370 API tests share one running app, which keeps their mean low.
