@@ -3,10 +3,10 @@ name: OpenAPI policy
 # Builds PostgREST from this branch, starts it against Postgres, fetches the
 # generated OpenAPI spec and checks it, unpatched, with Spectral (OWASP ruleset)
 # and OPA (Rego).
+# Runs on pull requests that touch the policy or spec code, or on demand
+# (Actions tab -> Run workflow, once this file is on the default branch).
 on:
   workflow_dispatch:
-  push:
-    branches: [feat/opa-openapi-policy]
   pull_request:
     paths:
       - "policy/openapi/**"
